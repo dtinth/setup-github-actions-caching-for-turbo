@@ -24,6 +24,14 @@ async function run(): Promise<void> {
   if (process.argv[2] === '--server') {
     return server()
   }
+  if (process.argv[2] === '--self-test') {
+    await saveCache(
+      'self-test',
+      4,
+      Readable.from([Buffer.from('meow')], {objectMode: false})
+    )
+    return
+  }
   try {
     // const ms: string = core.getInput('milliseconds')
     const out = openSync(serverLogFile, 'a')
@@ -107,7 +115,7 @@ const env = Env(
 
 function getCacheClient(): AxiosInstance {
   return axios.create({
-    baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/apis/_artifactcache`,
+    baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/_apis/artifactcache`,
     headers: {
       Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
     }
@@ -166,7 +174,7 @@ async function getCache(
     .get(`/caches`, {
       params: {
         keys: cacheKey,
-        version: 'turbogha_v1',
+        version: 'turbogha_v1'
       },
       validateStatus: s => s < 500
     })

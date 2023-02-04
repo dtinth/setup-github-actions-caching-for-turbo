@@ -50,6 +50,7 @@ const fs_1 = __nccwpck_require__(57147);
 const wait_on_1 = __importDefault(__nccwpck_require__(72278));
 const axios_1 = __importDefault(__nccwpck_require__(17862));
 const promises_1 = __nccwpck_require__(74845);
+const stream_1 = __nccwpck_require__(12781);
 const lazy_strict_env_1 = __nccwpck_require__(64970);
 const zod_1 = __nccwpck_require__(41460);
 const serverPort = 41230;
@@ -58,6 +59,10 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         if (process.argv[2] === '--server') {
             return server();
+        }
+        if (process.argv[2] === '--self-test') {
+            yield saveCache('self-test', 4, stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
+            return;
         }
         try {
             // const ms: string = core.getInput('milliseconds')
@@ -132,7 +137,7 @@ const env = (0, lazy_strict_env_1.Env)(zod_1.z.object({
 // Thanks: https://github.com/tonistiigi/go-actions-cache/blob/master/api.md
 function getCacheClient() {
     return axios_1.default.create({
-        baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/apis/_artifactcache`,
+        baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/_apis/artifactcache`,
         headers: {
             Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
         }
@@ -187,7 +192,7 @@ function getCache(hash) {
             .get(`/caches`, {
             params: {
                 keys: cacheKey,
-                version: 'turbogha_v1',
+                version: 'turbogha_v1'
             },
             validateStatus: s => s < 500
         })
