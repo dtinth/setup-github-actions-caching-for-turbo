@@ -189,10 +189,16 @@ run()
 function handleAxiosError(message: string): (err: any) => never {
   return err => {
     if (err.response) {
-      core.info(`Response: ${JSON.stringify(err.response.data)}`)
+      const data = JSON.stringify(err.response.data)
+      core.info(
+        `Response status ${err.response.status}: ${err.response.statusText}`
+      )
+      core.info(`Response headers: ${JSON.stringify(err.response.headers)}`)
+      core.info(`Response data: ${data}`)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      throw new Error(`${message}: ${err.message}`, {cause: err})
     }
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    throw new Error(`${message}: ${err.message}`, {cause: err})
+    throw err
   }
 }
