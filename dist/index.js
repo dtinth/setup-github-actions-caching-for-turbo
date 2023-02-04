@@ -183,7 +183,7 @@ function getCache(hash) {
             },
             validateStatus: s => s < 500
         });
-        core.info(`Cache lookup for ${cacheKey}: ${status}`);
+        core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`);
         if (data.cacheKey !== cacheKey) {
             core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
             return null;
