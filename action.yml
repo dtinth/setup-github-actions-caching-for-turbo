@@ -1,11 +1,6 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
-inputs:
-  milliseconds: # change this
-    required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+name: 'Set up GitHub Actions caching for Turborepo'
+description: 'Sets up Turborepo Remote Caching using GitHub Actions’ built-in cache instead of Vercel'
+author: 'Thai Pangsakulyanont'
 runs:
   using: 'node16'
   main: 'dist/index.js'
