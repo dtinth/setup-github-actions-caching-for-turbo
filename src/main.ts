@@ -27,15 +27,19 @@ async function run(): Promise<void> {
     return server()
   }
   if (process.argv[2] === '--self-test') {
-    await saveCache(
+    return saveCache(
       'self-test',
       4,
       Readable.from([Buffer.from('meow')], {objectMode: false})
     )
-    return
   }
+  return launchServer()
+}
+
+async function launchServer(): Promise<void> {
   try {
-    // const ms: string = core.getInput('milliseconds')
+    // Launch a detached child process to run the server
+    // See: https://nodejs.org/docs/latest-v16.x/api/child_process.html#optionsdetached
     const out = openSync(serverLogFile, 'a')
     const err = openSync(serverLogFile, 'a')
     const child = spawn(process.argv[0], [process.argv[1], '--server'], {
@@ -46,12 +50,14 @@ async function run(): Promise<void> {
     core.info(`Launched child process: ${child.pid}`)
     core.info(`Server log file: ${serverLogFile}`)
 
+    // Wait for the server to be up and running
     await waitOn({
       resources: [`http-get://localhost:${serverPort}`],
       timeout: 10000
     })
     core.info(`Server is now up and running.`)
 
+    // Export the environment variables for Turbo to pick up
     core.exportVariable('TURBO_API', `http://localhost:${serverPort}`)
     core.exportVariable('TURBO_TOKEN', 'turbogha')
     core.exportVariable('TURBO_TEAM', 'turbogha')
@@ -64,19 +70,28 @@ async function server(): Promise<void> {
   const fastify = Fastify({
     logger: true
   })
+
+  // For server status check
   fastify.get('/', async () => {
     return {ok: true}
   })
+
+  // For shutting down the server
   fastify.delete('/self', async () => {
     setTimeout(() => process.exit(0), 100)
     return {ok: true}
   })
+
+  // Handle streaming request body
+  // https://www.fastify.io/docs/latest/Reference/ContentTypeParser/#catch-all
   fastify.addContentTypeParser(
     'application/octet-stream',
     (_req, _payload, done) => {
       done(null)
     }
   )
+
+  // Upload cache
   fastify.put('/v8/artifacts/:hash', async request => {
     const hash = (request.params as {hash: string}).hash
     core.info(`Received artifact for ${hash}`)
@@ -87,6 +102,8 @@ async function server(): Promise<void> {
     )
     return {ok: true}
   })
+
+  // Download cache
   fastify.get('/v8/artifacts/:hash', async (request, reply) => {
     const hash = (request.params as {hash: string}).hash
     core.info(`Requested artifact for ${hash}`)

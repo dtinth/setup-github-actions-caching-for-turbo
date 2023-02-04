@@ -63,11 +63,16 @@ function run() {
             return server();
         }
         if (process.argv[2] === '--self-test') {
-            yield saveCache('self-test', 4, stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
-            return;
+            return saveCache('self-test', 4, stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
         }
+        return launchServer();
+    });
+}
+function launchServer() {
+    return __awaiter(this, void 0, void 0, function* () {
         try {
-            // const ms: string = core.getInput('milliseconds')
+            // Launch a detached child process to run the server
+            // See: https://nodejs.org/docs/latest-v16.x/api/child_process.html#optionsdetached
             const out = (0, fs_1.openSync)(serverLogFile, 'a');
             const err = (0, fs_1.openSync)(serverLogFile, 'a');
             const child = (0, child_process_1.spawn)(process.argv[0], [process.argv[1], '--server'], {
@@ -77,11 +82,13 @@ function run() {
             child.unref();
             core.info(`Launched child process: ${child.pid}`);
             core.info(`Server log file: ${serverLogFile}`);
+            // Wait for the server to be up and running
             yield (0, wait_on_1.default)({
                 resources: [`http-get://localhost:${serverPort}`],
                 timeout: 10000
             });
             core.info(`Server is now up and running.`);
+            // Export the environment variables for Turbo to pick up
             core.exportVariable('TURBO_API', `http://localhost:${serverPort}`);
             core.exportVariable('TURBO_TOKEN', 'turbogha');
             core.exportVariable('TURBO_TEAM', 'turbogha');
@@ -97,22 +104,28 @@ function server() {
         const fastify = (0, fastify_1.default)({
             logger: true
         });
+        // For server status check
         fastify.get('/', () => __awaiter(this, void 0, void 0, function* () {
             return { ok: true };
         }));
+        // For shutting down the server
         fastify.delete('/self', () => __awaiter(this, void 0, void 0, function* () {
             setTimeout(() => process.exit(0), 100);
             return { ok: true };
         }));
+        // Handle streaming request body
+        // https://www.fastify.io/docs/latest/Reference/ContentTypeParser/#catch-all
         fastify.addContentTypeParser('application/octet-stream', (_req, _payload, done) => {
             done(null);
         });
+        // Upload cache
         fastify.put('/v8/artifacts/:hash', (request) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
             core.info(`Received artifact for ${hash}`);
             yield saveCache(hash, +(request.headers['content-length'] || 0), request.raw);
             return { ok: true };
         }));
+        // Download cache
         fastify.get('/v8/artifacts/:hash', (request, reply) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
             core.info(`Requested artifact for ${hash}`);
