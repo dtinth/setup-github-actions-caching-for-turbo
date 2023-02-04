@@ -1,10 +1,19 @@
 import * as core from '@actions/core'
 import Fastify from 'fastify'
 import {spawn} from 'child_process'
-import {createReadStream, createWriteStream, existsSync, openSync, statSync} from 'fs'
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  openSync,
+  statSync
+} from 'fs'
 import waitOn from 'wait-on'
+import axios, {AxiosInstance} from 'axios'
 import {pipeline} from 'stream/promises'
 import {Readable} from 'stream'
+import {Env} from 'lazy-strict-env'
+import {z} from 'zod'
 
 const serverPort = 41230
 const serverLogFile = '/tmp/turbogha.log'
@@ -74,11 +83,32 @@ async function server(): Promise<void> {
       return {ok: false}
     }
     const [size, stream] = result
-    reply.header('Content-Length', size)
+    if (size) {
+      reply.header('Content-Length', size)
+    }
     reply.header('Content-Type', 'application/octet-stream')
     return reply.send(stream)
   })
   await fastify.listen({port: serverPort})
+}
+
+const env = Env(
+  z.object({
+    ACTIONS_RUNTIME_TOKEN: z.string(),
+    ACTIONS_CACHE_URL: z.string()
+  })
+)
+
+// GitHub's Cache API
+// Thanks: https://github.com/tonistiigi/go-actions-cache/blob/master/api.md
+
+function getCacheClient(): AxiosInstance {
+  return axios.create({
+    baseURL: `${env.ACTIONS_CACHE_URL}/apis/_artifactcache`,
+    headers: {
+      Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
+    }
+  })
 }
 
 async function saveCache(
@@ -86,14 +116,58 @@ async function saveCache(
   size: number,
   stream: Readable
 ): Promise<void> {
-  await pipeline(stream, createWriteStream(`/tmp/${hash}.tg.bin`))
+  if (!env.valid) {
+    core.info(`Using filesystem cache because cache API env vars are not set`)
+    await pipeline(stream, createWriteStream(`/tmp/${hash}.tg.bin`))
+    return
+  }
+  const client = getCacheClient()
+  const {data} = await client.post(`/caches`, {
+    key: `turbogha-${hash}`,
+    version: 'turbogha_v1'
+  })
+  const id = data.cacheID
+  if (!id) {
+    throw new Error('Unable to reserve cache')
+  }
+  core.info(`Reserved cache ${id}`)
+  await client.patch(`/caches/${id}`, stream, {
+    headers: {
+      'Content-Length': size,
+      'Content-Type': 'application/octet-stream',
+      'Content-Range': `bytes 0-${size - 1}/*`
+    }
+  })
+  await client.post(`/caches/${id}`, {size})
+  core.info(`Saved cache ${id} for ${hash} (${size} bytes)`)
 }
 
-async function getCache(hash: string): Promise<[number, Readable] | null> {
-  const path = `/tmp/${hash}.tg.bin`
-  if (!existsSync(path)) return null
-  const size = statSync(path).size
-  return [size, createReadStream(path)]
+async function getCache(
+  hash: string
+): Promise<[number | undefined, Readable] | null> {
+  if (!env.valid) {
+    const path = `/tmp/${hash}.tg.bin`
+    if (!existsSync(path)) return null
+    const size = statSync(path).size
+    return [size, createReadStream(path)]
+  }
+  const client = getCacheClient()
+  const cacheKey = `turbogha-${hash}`
+  const {data} = await client.get(`/caches`, {
+    params: {
+      keys: cacheKey,
+      version: 'turbogha_v1'
+    }
+  })
+  if (data.cacheKey !== cacheKey) {
+    core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
+    return null
+  }
+  const resp = await axios.get(data.archiveLocation, {
+    responseType: 'stream'
+  })
+  const size = +(resp.headers['content-length'] || 0)
+  return [size, resp.data]
 }
 
 run()

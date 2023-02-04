@@ -15,18 +15,22 @@ specifiers:
   fastify: ^4.12.0
   jest: ^29.4.1
   js-yaml: ^4.1.0
+  lazy-strict-env: ^0.3.1
   pino-pretty: ^9.1.1
   prettier: 2.8.3
   ts-jest: ^29.0.5
   typescript: ^4.4.4
   wait-on: ^7.0.1
+  zod: ^3.20.2
 
 dependencies:
   '@actions/core': 1.10.0
   axios: 1.3.2
   fastify: 4.12.0
+  lazy-strict-env: 0.3.1_zod@3.20.2
   pino-pretty: 9.1.1
   wait-on: 7.0.1
+  zod: 3.20.2
 
 devDependencies:
   '@jest/globals': 29.4.1
@@ -3297,6 +3301,14 @@ packages:
       language-subtag-registry: 0.3.22
     dev: true
 
+  /lazy-strict-env/0.3.1_zod@3.20.2:
+    resolution: {integrity: sha512-8A//LSm8Enrz6iBgFk56dfJcHXCM3429zbnSpjBDEVStDEYtD0Chd6+5mQQS1QTjxoALgZ2I3ClRuymy4qw0SA==}
+    peerDependencies:
+      zod: '>=3.0.0'
+    dependencies:
+      zod: 3.20.2
+    dev: false
+
   /leven/3.1.0:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
     engines: {node: '>=6'}
@@ -4411,3 +4423,7 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  /zod/3.20.2:
+    resolution: {integrity: sha512-1MzNQdAvO+54H+EaK5YpyEy0T+Ejo/7YLHS93G3RnYWh5gaotGHwGeN/ZO687qEDU2y4CdStQYXVHIgrUl5UVQ==}
+    dev: false
