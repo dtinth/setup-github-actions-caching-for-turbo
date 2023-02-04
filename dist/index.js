@@ -42,6 +42,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+/* eslint-disable github/no-then */
 const core = __importStar(__nccwpck_require__(67733));
 const fastify_1 = __importDefault(__nccwpck_require__(60390));
 const child_process_1 = __nccwpck_require__(32081);
@@ -145,23 +146,29 @@ function saveCache(hash, size, stream) {
             return;
         }
         const client = getCacheClient();
-        const { data } = yield client.post(`/caches`, {
+        const { data } = yield client
+            .post(`/caches`, {
             key: `turbogha-${hash}`,
             version: 'turbogha_v1'
-        });
+        })
+            .catch(handleAxiosError('Unable to reserve cache'));
         const id = data.cacheID;
         if (!id) {
             throw new Error('Unable to reserve cache');
         }
         core.info(`Reserved cache ${id}`);
-        yield client.patch(`/caches/${id}`, stream, {
+        yield client
+            .patch(`/caches/${id}`, stream, {
             headers: {
                 'Content-Length': size,
                 'Content-Type': 'application/octet-stream',
                 'Content-Range': `bytes 0-${size - 1}/*`
             }
-        });
-        yield client.post(`/caches/${id}`, { size });
+        })
+            .catch(handleAxiosError('Unable to upload cache'));
+        yield client
+            .post(`/caches/${id}`, { size })
+            .catch(handleAxiosError('Unable to commit cache'));
         core.info(`Saved cache ${id} for ${hash} (${size} bytes)`);
     });
 }
@@ -176,13 +183,15 @@ function getCache(hash) {
         }
         const client = getCacheClient();
         const cacheKey = `turbogha-${hash}`;
-        const { data, status } = yield client.get(`/caches`, {
+        const { data, status } = yield client
+            .get(`/caches`, {
             params: {
                 keys: cacheKey,
                 version: 'turbogha_v1'
             },
             validateStatus: s => s < 500
-        });
+        })
+            .catch(handleAxiosError('Unable to reserve cache'));
         core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`);
         if (data.cacheKey !== cacheKey) {
             core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
@@ -196,6 +205,17 @@ function getCache(hash) {
     });
 }
 run();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleAxiosError(message) {
+    return err => {
+        if (err.response) {
+            core.info(`Response: ${JSON.stringify(err.response.data)}`);
+        }
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        throw new Error(`${message}: ${err.message}`, { cause: err });
+    };
+}
 
 
 /***/ }),

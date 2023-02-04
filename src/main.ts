@@ -1,3 +1,4 @@
+/* eslint-disable github/no-then */
 import * as core from '@actions/core'
 import Fastify from 'fastify'
 import {spawn} from 'child_process'
@@ -124,23 +125,29 @@ async function saveCache(
     return
   }
   const client = getCacheClient()
-  const {data} = await client.post(`/caches`, {
-    key: `turbogha-${hash}`,
-    version: 'turbogha_v1'
-  })
+  const {data} = await client
+    .post(`/caches`, {
+      key: `turbogha-${hash}`,
+      version: 'turbogha_v1'
+    })
+    .catch(handleAxiosError('Unable to reserve cache'))
   const id = data.cacheID
   if (!id) {
     throw new Error('Unable to reserve cache')
   }
   core.info(`Reserved cache ${id}`)
-  await client.patch(`/caches/${id}`, stream, {
-    headers: {
-      'Content-Length': size,
-      'Content-Type': 'application/octet-stream',
-      'Content-Range': `bytes 0-${size - 1}/*`
-    }
-  })
-  await client.post(`/caches/${id}`, {size})
+  await client
+    .patch(`/caches/${id}`, stream, {
+      headers: {
+        'Content-Length': size,
+        'Content-Type': 'application/octet-stream',
+        'Content-Range': `bytes 0-${size - 1}/*`
+      }
+    })
+    .catch(handleAxiosError('Unable to upload cache'))
+  await client
+    .post(`/caches/${id}`, {size})
+    .catch(handleAxiosError('Unable to commit cache'))
   core.info(`Saved cache ${id} for ${hash} (${size} bytes)`)
 }
 
@@ -155,13 +162,15 @@ async function getCache(
   }
   const client = getCacheClient()
   const cacheKey = `turbogha-${hash}`
-  const {data, status} = await client.get(`/caches`, {
-    params: {
-      keys: cacheKey,
-      version: 'turbogha_v1'
-    },
-    validateStatus: s => s < 500
-  })
+  const {data, status} = await client
+    .get(`/caches`, {
+      params: {
+        keys: cacheKey,
+        version: 'turbogha_v1'
+      },
+      validateStatus: s => s < 500
+    })
+    .catch(handleAxiosError('Unable to reserve cache'))
   core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`)
   if (data.cacheKey !== cacheKey) {
     core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
@@ -175,3 +184,15 @@ async function getCache(
 }
 
 run()
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleAxiosError(message: string): (err: any) => never {
+  return err => {
+    if (err.response) {
+      core.info(`Response: ${JSON.stringify(err.response.data)}`)
+    }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    throw new Error(`${message}: ${err.message}`, {cause: err})
+  }
+}
