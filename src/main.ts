@@ -106,7 +106,7 @@ const env = Env(
 
 function getCacheClient(): AxiosInstance {
   return axios.create({
-    baseURL: `${env.ACTIONS_CACHE_URL}/apis/_artifactcache`,
+    baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/apis/_artifactcache`,
     headers: {
       Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
     }

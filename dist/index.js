@@ -131,7 +131,7 @@ const env = (0, lazy_strict_env_1.Env)(zod_1.z.object({
 // Thanks: https://github.com/tonistiigi/go-actions-cache/blob/master/api.md
 function getCacheClient() {
     return axios_1.default.create({
-        baseURL: `${env.ACTIONS_CACHE_URL}/apis/_artifactcache`,
+        baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/apis/_artifactcache`,
         headers: {
             Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
         }
