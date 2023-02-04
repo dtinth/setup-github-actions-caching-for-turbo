@@ -3,6 +3,7 @@ import {inspect} from 'util'
 import Fastify from 'fastify'
 import {spawn} from 'child_process'
 import {openSync} from 'fs'
+import waitOn from 'wait-on'
 
 const serverPort = 41230
 const serverLogFile = '/tmp/turbogha.log'
@@ -21,6 +22,13 @@ async function run(): Promise<void> {
     })
     child.unref()
     core.info(`Launched child process: ${child.pid}`)
+
+    await waitOn({
+      resources: [`http-get://localhost:${serverPort}`],
+      timeout: 10000
+    })
+    core.info(`Server is running now!`)
+
     core.debug(new Date().toTimeString())
     core.setOutput('time', new Date().toTimeString())
   } catch (error) {
