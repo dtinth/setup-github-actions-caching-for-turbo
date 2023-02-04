@@ -64,11 +64,12 @@ function run() {
             });
             child.unref();
             core.info(`Launched child process: ${child.pid}`);
+            core.info(`Server log file: ${serverLogFile}`);
             yield (0, wait_on_1.default)({
                 resources: [`http-get://localhost:${serverPort}`],
                 timeout: 10000
             });
-            core.info(`Server is running now!`);
+            core.info(`Server is now up and running.`);
             core.debug(new Date().toTimeString());
             core.setOutput('time', new Date().toTimeString());
         }
