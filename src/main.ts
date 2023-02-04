@@ -180,6 +180,10 @@ async function getCache(
     })
     .catch(handleAxiosError('Unable to query cache'))
   core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`)
+  if (!data) {
+    core.info(`Cache lookup did not return data`)
+    return null
+  }
   if (data.cacheKey !== cacheKey) {
     core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
     return null
