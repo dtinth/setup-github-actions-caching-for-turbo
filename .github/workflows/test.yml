@@ -11,10 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 7.26.3
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v3.5.1
+        with:
+          node-version: 16.x
+          cache: pnpm
       - run: |
-          npm install
+          pnpm install
       - run: |
-          npm run all
+          pnpm run all
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
