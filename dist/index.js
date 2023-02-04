@@ -47,6 +47,7 @@ const fastify_1 = __importDefault(__nccwpck_require__(60390));
 const child_process_1 = __nccwpck_require__(32081);
 const fs_1 = __nccwpck_require__(57147);
 const wait_on_1 = __importDefault(__nccwpck_require__(72278));
+const promises_1 = __nccwpck_require__(74845);
 const serverPort = 41230;
 const serverLogFile = '/tmp/turbogha.log';
 function run() {
@@ -98,9 +99,30 @@ function server() {
             const hash = request.params.hash;
             core.info(`Received artifact for ${hash}`);
             core.info(`Headers: ${JSON.stringify(request.headers, null, 2)}`);
+            yield saveCache(hash, +(request.headers['content-length'] || 0), request.raw);
             return { ok: true };
         }));
+        fastify.get('/v8/artifacts/:hash', (request, reply) => __awaiter(this, void 0, void 0, function* () {
+            const hash = request.params.hash;
+            core.info(`Requested artifact for ${hash}`);
+            const [size, stream] = yield getCache(hash);
+            reply.header('Content-Length', size);
+            reply.header('Content-Type', 'application/octet-stream');
+            return reply.send(stream);
+        }));
         yield fastify.listen({ port: serverPort });
+    });
+}
+function saveCache(hash, size, stream) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield (0, promises_1.pipeline)(stream, (0, fs_1.createWriteStream)(`/tmp/${hash}.tg.bin`));
+    });
+}
+function getCache(hash) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const path = `/tmp/${hash}.tg.bin`;
+        const size = (0, fs_1.statSync)(path).size;
+        return [size, (0, fs_1.createReadStream)(path)];
     });
 }
 run();
@@ -60664,6 +60686,14 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("stream");
+
+/***/ }),
+
+/***/ 74845:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("stream/promises");
 
 /***/ }),
 

@@ -1,8 +1,10 @@
 import * as core from '@actions/core'
 import Fastify from 'fastify'
 import {spawn} from 'child_process'
-import {openSync} from 'fs'
+import {createReadStream, createWriteStream, openSync, statSync} from 'fs'
 import waitOn from 'wait-on'
+import {pipeline} from 'stream/promises'
+import {Readable} from 'stream'
 
 const serverPort = 41230
 const serverLogFile = '/tmp/turbogha.log'
@@ -57,9 +59,36 @@ async function server(): Promise<void> {
     const hash = (request.params as {hash: string}).hash
     core.info(`Received artifact for ${hash}`)
     core.info(`Headers: ${JSON.stringify(request.headers, null, 2)}`)
+    await saveCache(
+      hash,
+      +(request.headers['content-length'] || 0),
+      request.raw
+    )
     return {ok: true}
   })
+  fastify.get('/v8/artifacts/:hash', async (request, reply) => {
+    const hash = (request.params as {hash: string}).hash
+    core.info(`Requested artifact for ${hash}`)
+    const [size, stream] = await getCache(hash)
+    reply.header('Content-Length', size)
+    reply.header('Content-Type', 'application/octet-stream')
+    return reply.send(stream)
+  })
   await fastify.listen({port: serverPort})
+}
+
+async function saveCache(
+  hash: string,
+  size: number,
+  stream: Readable
+): Promise<void> {
+  await pipeline(stream, createWriteStream(`/tmp/${hash}.tg.bin`))
+}
+
+async function getCache(hash: string): Promise<[number, Readable]> {
+  const path = `/tmp/${hash}.tg.bin`
+  const size = statSync(path).size
+  return [size, createReadStream(path)]
 }
 
 run()

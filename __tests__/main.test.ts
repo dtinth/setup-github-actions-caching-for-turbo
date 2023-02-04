@@ -16,6 +16,18 @@ it('works', async () => {
   expect(data).toEqual({ok: true})
 })
 
+it('can save and load', async () => {
+  await axios.put('http://localhost:41230/v8/artifacts/123', Buffer.from('meow'), {
+    headers: {
+      'Content-Type': 'application/octet-stream',
+    }
+  })
+  const {data} = await axios.get('http://localhost:41230/v8/artifacts/123', {
+    responseType: 'arraybuffer'
+  })
+  expect(Buffer.from(data).toString()).toEqual('meow')
+})
+
 afterAll(async () => {
   await axios.delete('http://localhost:41230/self')
 })
