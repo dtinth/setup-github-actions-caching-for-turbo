@@ -1,6 +1,9 @@
 name: 'Set up GitHub Actions caching for Turborepo'
-description: 'Sets up Turborepo Remote Caching using GitHub Actions’ built-in cache instead of Vercel'
+description: 'Sets up Turborepo Remote Caching using GitHub Actions’ built-in cache instead of Vercel. No Vercel account access tokens needed.'
 author: 'Thai Pangsakulyanont'
+branding:
+  icon: cloud-lightning
+  color: blue
 runs:
   using: 'node16'
   main: 'dist/index.js'
