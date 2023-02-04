@@ -20,6 +20,7 @@ import {z} from 'zod'
 const serverPort = 41230
 const serverLogFile = '/tmp/turbogha.log'
 const cacheVersion = 'turbogha_v2'
+const getCacheKey = (hash: string): string => `turbogha_${hash}`
 
 async function run(): Promise<void> {
   if (process.argv[2] === '--server') {
@@ -137,7 +138,7 @@ async function saveCache(
   const client = getCacheClient()
   const {data} = await client
     .post(`/caches`, {
-      key: `turbogha_${hash}`,
+      key: getCacheKey(hash),
       version: cacheVersion
     })
     .catch(handleAxiosError('Unable to reserve cache'))
@@ -173,7 +174,7 @@ async function getCache(
     return [size, createReadStream(path)]
   }
   const client = getCacheClient()
-  const cacheKey = `turbogha-${hash}`
+  const cacheKey = getCacheKey(hash)
   const {data, status} = await client
     .get(`/caches`, {
       params: {

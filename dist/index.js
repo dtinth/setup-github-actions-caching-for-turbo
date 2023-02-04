@@ -56,6 +56,7 @@ const zod_1 = __nccwpck_require__(41460);
 const serverPort = 41230;
 const serverLogFile = '/tmp/turbogha.log';
 const cacheVersion = 'turbogha_v2';
+const getCacheKey = (hash) => `turbogha_${hash}`;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         if (process.argv[2] === '--server') {
@@ -155,7 +156,7 @@ function saveCache(hash, size, stream) {
         const client = getCacheClient();
         const { data } = yield client
             .post(`/caches`, {
-            key: `turbogha_${hash}`,
+            key: getCacheKey(hash),
             version: cacheVersion
         })
             .catch(handleAxiosError('Unable to reserve cache'));
@@ -189,7 +190,7 @@ function getCache(hash) {
             return [size, (0, fs_1.createReadStream)(path)];
         }
         const client = getCacheClient();
-        const cacheKey = `turbogha-${hash}`;
+        const cacheKey = getCacheKey(hash);
         const { data, status } = yield client
             .get(`/caches`, {
             params: {
