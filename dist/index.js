@@ -176,12 +176,14 @@ function getCache(hash) {
         }
         const client = getCacheClient();
         const cacheKey = `turbogha-${hash}`;
-        const { data } = yield client.get(`/caches`, {
+        const { data, status } = yield client.get(`/caches`, {
             params: {
                 keys: cacheKey,
                 version: 'turbogha_v1'
-            }
+            },
+            validateStatus: s => s < 500
         });
+        core.info(`Cache lookup for ${cacheKey}: ${status}`);
         if (data.cacheKey !== cacheKey) {
             core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
             return null;

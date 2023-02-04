@@ -155,12 +155,14 @@ async function getCache(
   }
   const client = getCacheClient()
   const cacheKey = `turbogha-${hash}`
-  const {data} = await client.get(`/caches`, {
+  const {data, status} = await client.get(`/caches`, {
     params: {
       keys: cacheKey,
       version: 'turbogha_v1'
-    }
+    },
+    validateStatus: s => s < 500
   })
+  core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`)
   if (data.cacheKey !== cacheKey) {
     core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
     return null
