@@ -90,6 +90,15 @@ function server() {
             setTimeout(() => process.exit(0), 100);
             return { ok: true };
         }));
+        fastify.addContentTypeParser('application/octet-stream', (_req, _payload, done) => {
+            done(null);
+        });
+        fastify.put('/v8/artifacts/:hash', (request) => __awaiter(this, void 0, void 0, function* () {
+            const hash = request.params.hash;
+            core.info(`Received artifact for ${hash}`);
+            core.info(`Headers: ${JSON.stringify(request.headers, null, 2)}`);
+            return { ok: true };
+        }));
         yield fastify.listen({ port: serverPort });
     });
 }

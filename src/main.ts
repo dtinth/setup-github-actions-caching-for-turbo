@@ -1,5 +1,4 @@
 import * as core from '@actions/core'
-import {inspect} from 'util'
 import Fastify from 'fastify'
 import {spawn} from 'child_process'
 import {openSync} from 'fs'
@@ -45,6 +44,18 @@ async function server(): Promise<void> {
   })
   fastify.delete('/self', async () => {
     setTimeout(() => process.exit(0), 100)
+    return {ok: true}
+  })
+  fastify.addContentTypeParser(
+    'application/octet-stream',
+    (_req, _payload, done) => {
+      done(null)
+    }
+  )
+  fastify.put('/v8/artifacts/:hash', async request => {
+    const hash = (request.params as {hash: string}).hash
+    core.info(`Received artifact for ${hash}`)
+    core.info(`Headers: ${JSON.stringify(request.headers, null, 2)}`)
     return {ok: true}
   })
   await fastify.listen({port: serverPort})
