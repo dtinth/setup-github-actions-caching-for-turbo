@@ -55,8 +55,8 @@ function run() {
         }
         try {
             // const ms: string = core.getInput('milliseconds')
-            const out = (0, fs_1.openSync)('./out.log', 'a');
-            const err = (0, fs_1.openSync)('./out.log', 'a');
+            const out = (0, fs_1.openSync)(serverLogFile, 'a');
+            const err = (0, fs_1.openSync)(serverLogFile, 'a');
             const child = (0, child_process_1.spawn)(process.argv[0], [process.argv[1], '--server'], {
                 detached: true,
                 stdio: ['ignore', out, err]
