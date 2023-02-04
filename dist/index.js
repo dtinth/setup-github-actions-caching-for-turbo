@@ -75,17 +75,14 @@ function run() {
 function server() {
     return __awaiter(this, void 0, void 0, function* () {
         const fastify = (0, fastify_1.default)({
-            logger: {
-                transport: {
-                    target: 'pino-pretty'
-                }
-            }
+            logger: true
         });
         fastify.get('/', () => __awaiter(this, void 0, void 0, function* () {
             return { ok: true };
         }));
         fastify.delete('/self', () => __awaiter(this, void 0, void 0, function* () {
-            process.exit(0);
+            setTimeout(() => process.exit(0), 100);
+            return { ok: true };
         }));
         yield fastify.listen({ port: serverPort });
     });

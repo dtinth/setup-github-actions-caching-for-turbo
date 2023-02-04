@@ -30,17 +30,14 @@ async function run(): Promise<void> {
 
 async function server(): Promise<void> {
   const fastify = Fastify({
-    logger: {
-      transport: {
-        target: 'pino-pretty'
-      }
-    }
+    logger: true
   })
   fastify.get('/', async () => {
     return {ok: true}
   })
   fastify.delete('/self', async () => {
-    process.exit(0)
+    setTimeout(() => process.exit(0), 100)
+    return {ok: true}
   })
   await fastify.listen({port: serverPort})
 }
