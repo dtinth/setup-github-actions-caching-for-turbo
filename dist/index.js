@@ -148,8 +148,8 @@ function saveCache(hash, size, stream) {
         const client = getCacheClient();
         const { data } = yield client
             .post(`/caches`, {
-            key: `turbogha-${hash}`,
-            version: 'turbogha_v1'
+            key: `turbogha_${hash}`,
+            version: 'turbogha_v2'
         })
             .catch(handleAxiosError('Unable to reserve cache'));
         const id = data.cacheID;
@@ -187,11 +187,11 @@ function getCache(hash) {
             .get(`/caches`, {
             params: {
                 keys: cacheKey,
-                version: 'turbogha_v1'
+                version: 'turbogha_v1',
             },
             validateStatus: s => s < 500
         })
-            .catch(handleAxiosError('Unable to reserve cache'));
+            .catch(handleAxiosError('Unable to query cache'));
         core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`);
         if (data.cacheKey !== cacheKey) {
             core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
