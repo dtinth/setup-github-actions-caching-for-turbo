@@ -41,8 +41,9 @@ jobs:
           node-version: 16.x
           cache: pnpm
       - run: cd demo && pnpm install && pnpm turbo build
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
-        timeout-minutes: 15
+      # # For interactive debugging
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   with:
+      #     limit-access-to-actor: true
+      #   timeout-minutes: 15

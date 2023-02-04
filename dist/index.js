@@ -55,6 +55,7 @@ const lazy_strict_env_1 = __nccwpck_require__(64970);
 const zod_1 = __nccwpck_require__(41460);
 const serverPort = 41230;
 const serverLogFile = '/tmp/turbogha.log';
+const cacheVersion = 'turbogha_v2';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         if (process.argv[2] === '--server') {
@@ -139,7 +140,8 @@ function getCacheClient() {
     return axios_1.default.create({
         baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/_apis/artifactcache`,
         headers: {
-            Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
+            Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`,
+            Accept: 'application/json;api-version=6.0-preview.1'
         }
     });
 }
@@ -154,12 +156,12 @@ function saveCache(hash, size, stream) {
         const { data } = yield client
             .post(`/caches`, {
             key: `turbogha_${hash}`,
-            version: 'turbogha_v2'
+            version: cacheVersion
         })
             .catch(handleAxiosError('Unable to reserve cache'));
-        const id = data.cacheID;
+        const id = data.cacheId;
         if (!id) {
-            throw new Error('Unable to reserve cache');
+            throw new Error(`Unable to reserve cache (received: ${JSON.stringify(data)})`);
         }
         core.info(`Reserved cache ${id}`);
         yield client
@@ -192,7 +194,7 @@ function getCache(hash) {
             .get(`/caches`, {
             params: {
                 keys: cacheKey,
-                version: 'turbogha_v1'
+                version: cacheVersion
             },
             validateStatus: s => s < 500
         })

@@ -19,6 +19,7 @@ import {z} from 'zod'
 
 const serverPort = 41230
 const serverLogFile = '/tmp/turbogha.log'
+const cacheVersion = 'turbogha_v2'
 
 async function run(): Promise<void> {
   if (process.argv[2] === '--server') {
@@ -117,7 +118,8 @@ function getCacheClient(): AxiosInstance {
   return axios.create({
     baseURL: `${env.ACTIONS_CACHE_URL.replace(/\/$/, '')}/_apis/artifactcache`,
     headers: {
-      Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`
+      Authorization: `Bearer ${env.ACTIONS_RUNTIME_TOKEN}`,
+      Accept: 'application/json;api-version=6.0-preview.1'
     }
   })
 }
@@ -136,12 +138,14 @@ async function saveCache(
   const {data} = await client
     .post(`/caches`, {
       key: `turbogha_${hash}`,
-      version: 'turbogha_v2'
+      version: cacheVersion
     })
     .catch(handleAxiosError('Unable to reserve cache'))
-  const id = data.cacheID
+  const id = data.cacheId
   if (!id) {
-    throw new Error('Unable to reserve cache')
+    throw new Error(
+      `Unable to reserve cache (received: ${JSON.stringify(data)})`
+    )
   }
   core.info(`Reserved cache ${id}`)
   await client
@@ -174,7 +178,7 @@ async function getCache(
     .get(`/caches`, {
       params: {
         keys: cacheKey,
-        version: 'turbogha_v1'
+        version: cacheVersion
       },
       validateStatus: s => s < 500
     })
