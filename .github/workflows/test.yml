@@ -40,4 +40,4 @@ jobs:
         with:
           node-version: 16.x
           cache: pnpm
-      - run: cd dump && pnpm install && pnpm turbo build
+      - run: cd demo && pnpm install && pnpm turbo build
