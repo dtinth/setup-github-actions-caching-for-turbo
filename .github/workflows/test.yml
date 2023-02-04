@@ -28,5 +28,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./
+      - uses: actions/checkout@v3
         with:
-          milliseconds: 1000
+          repository: dtinth/turbo-caching-test
+          path: demo
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 7
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: 16.x
+          cache: pnpm
+      - run: cd dump && pnpm install && pnpm turbo build

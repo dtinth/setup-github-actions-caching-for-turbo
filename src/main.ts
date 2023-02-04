@@ -41,8 +41,9 @@ async function run(): Promise<void> {
     })
     core.info(`Server is now up and running.`)
 
-    core.debug(new Date().toTimeString())
-    core.setOutput('time', new Date().toTimeString())
+    core.exportVariable('TURBO_API', `http://localhost:${serverPort}`)
+    core.exportVariable('TURBO_TOKEN', 'turbogha')
+    core.exportVariable('TURBO_TEAM', 'turbogha')
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
