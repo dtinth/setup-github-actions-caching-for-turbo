@@ -13,8 +13,8 @@ async function run(): Promise<void> {
   }
   try {
     // const ms: string = core.getInput('milliseconds')
-    const out = openSync('./out.log', 'a')
-    const err = openSync('./out.log', 'a')
+    const out = openSync(serverLogFile, 'a')
+    const err = openSync(serverLogFile, 'a')
     const child = spawn(process.argv[0], [process.argv[1], '--server'], {
       detached: true,
       stdio: ['ignore', out, err]
