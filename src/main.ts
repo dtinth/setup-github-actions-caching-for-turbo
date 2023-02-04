@@ -9,7 +9,8 @@ import {
   statSync
 } from 'fs'
 import waitOn from 'wait-on'
-import axios, {AxiosInstance} from 'axios'
+import axios from 'axios'
+import type {AxiosInstance} from 'axios'
 import {pipeline} from 'stream/promises'
 import {Readable} from 'stream'
 import {Env} from 'lazy-strict-env'
