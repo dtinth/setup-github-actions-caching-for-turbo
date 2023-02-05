@@ -32,6 +32,7 @@ async function run(): Promise<void> {
       {log: console},
       'self-test',
       4,
+      '',
       Readable.from([Buffer.from('meow')], {objectMode: false})
     )
   }
@@ -109,6 +110,7 @@ async function server(): Promise<void> {
       request,
       hash,
       +(request.headers['content-length'] || 0),
+      String(request.headers['x-artifact-tag'] || ''),
       request.raw
     )
     return {ok: true}
@@ -123,11 +125,14 @@ async function server(): Promise<void> {
       reply.code(404)
       return {ok: false}
     }
-    const [size, stream] = result
+    const [size, stream, artifactTag] = result
     if (size) {
       reply.header('Content-Length', size)
     }
     reply.header('Content-Type', 'application/octet-stream')
+    if (artifactTag) {
+      reply.header('x-artifact-tag', artifactTag)
+    }
     return reply.send(stream)
   })
   await fastify.listen({port: serverPort})
@@ -163,6 +168,7 @@ async function saveCache(
   ctx: RequestContext,
   hash: string,
   size: number,
+  tag: string,
   stream: Readable
 ): Promise<void> {
   if (!env.valid) {
@@ -175,7 +181,7 @@ async function saveCache(
   const client = getCacheClient()
   const {data} = await client
     .post(`/caches`, {
-      key: getCacheKey(hash),
+      key: getCacheKey(hash) + (tag ? `#${tag}` : ''),
       version: cacheVersion
     })
     .catch(handleAxiosError('Unable to reserve cache'))
@@ -204,12 +210,12 @@ async function saveCache(
 async function getCache(
   ctx: RequestContext,
   hash: string
-): Promise<[number | undefined, Readable] | null> {
+): Promise<[number | undefined, Readable, string | undefined] | null> {
   if (!env.valid) {
     const path = `/tmp/${hash}.tg.bin`
     if (!existsSync(path)) return null
     const size = statSync(path).size
-    return [size, createReadStream(path)]
+    return [size, createReadStream(path), undefined]
   }
   const client = getCacheClient()
   const cacheKey = getCacheKey(hash)
@@ -227,15 +233,16 @@ async function getCache(
     ctx.log.info(`Cache lookup did not return data`)
     return null
   }
-  if (data.cacheKey !== cacheKey) {
-    ctx.log.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
+  const [foundCacheKey, artifactTag] = String(data.cacheKey).split('#')
+  if (foundCacheKey !== cacheKey) {
+    ctx.log.info(`Cache key mismatch: ${foundCacheKey} !== ${cacheKey}`)
     return null
   }
   const resp = await axios.get(data.archiveLocation, {
     responseType: 'stream'
   })
   const size = +(resp.headers['content-length'] || 0)
-  return [size, resp.data]
+  return [size, resp.data, artifactTag]
 }
 
 run()
