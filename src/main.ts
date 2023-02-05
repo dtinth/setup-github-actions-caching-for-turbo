@@ -59,9 +59,15 @@ async function launchServer(): Promise<void> {
     core.info(`Server is now up and running.`)
 
     // Export the environment variables for Turbo to pick up
-    core.exportVariable('TURBO_API', `http://localhost:${serverPort}`)
-    core.exportVariable('TURBO_TOKEN', 'turbogha')
-    core.exportVariable('TURBO_TEAM', 'turbogha')
+    core.info('The following environment variables are exported:')
+    const exportVariable = (name: string, value: string): void => {
+      core.exportVariable(name, value)
+      core.info(`  ${name}=${value}`)
+    }
+    exportVariable('TURBOGHA_PORT', `${serverPort}`)
+    exportVariable('TURBO_API', `http://localhost:${serverPort}`)
+    exportVariable('TURBO_TOKEN', 'turbogha')
+    exportVariable('TURBO_TEAM', 'turbogha')
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
