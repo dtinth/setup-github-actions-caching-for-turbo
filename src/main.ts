@@ -201,7 +201,7 @@ async function getCache(
       validateStatus: s => s < 500
     })
     .catch(handleAxiosError('Unable to query cache'))
-  core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`)
+  core.info(`Cache lookup for ${cacheKey}: ${status}`)
   if (!data) {
     core.info(`Cache lookup did not return data`)
     return null
