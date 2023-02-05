@@ -64,7 +64,7 @@ function run() {
             return server();
         }
         if (process.argv[2] === '--self-test') {
-            return saveCache({ log: console }, 'self-test', 4, stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
+            return saveCache({ log: console }, 'self-test', 4, '', stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
         }
         return launchServer();
     });
@@ -131,7 +131,7 @@ function server() {
         fastify.put('/v8/artifacts/:hash', (request) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
             request.log.info(`Received artifact for ${hash}`);
-            yield saveCache(request, hash, +(request.headers['content-length'] || 0), request.raw);
+            yield saveCache(request, hash, +(request.headers['content-length'] || 0), String(request.headers['x-artifact-tag'] || ''), request.raw);
             return { ok: true };
         }));
         // Download cache
@@ -143,11 +143,14 @@ function server() {
                 reply.code(404);
                 return { ok: false };
             }
-            const [size, stream] = result;
+            const [size, stream, artifactTag] = result;
             if (size) {
                 reply.header('Content-Length', size);
             }
             reply.header('Content-Type', 'application/octet-stream');
+            if (artifactTag) {
+                reply.header('x-artifact-tag', artifactTag);
+            }
             return reply.send(stream);
         }));
         yield fastify.listen({ port: serverPort });
@@ -168,7 +171,7 @@ function getCacheClient() {
         }
     });
 }
-function saveCache(ctx, hash, size, stream) {
+function saveCache(ctx, hash, size, tag, stream) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!env.valid) {
             ctx.log.info(`Using filesystem cache because cache API env vars are not set`);
@@ -178,7 +181,7 @@ function saveCache(ctx, hash, size, stream) {
         const client = getCacheClient();
         const { data } = yield client
             .post(`/caches`, {
-            key: getCacheKey(hash),
+            key: getCacheKey(hash) + (tag ? `#${tag}` : ''),
             version: cacheVersion
         })
             .catch(handleAxiosError('Unable to reserve cache'));
@@ -209,7 +212,7 @@ function getCache(ctx, hash) {
             if (!(0, fs_1.existsSync)(path))
                 return null;
             const size = (0, fs_1.statSync)(path).size;
-            return [size, (0, fs_1.createReadStream)(path)];
+            return [size, (0, fs_1.createReadStream)(path), undefined];
         }
         const client = getCacheClient();
         const cacheKey = getCacheKey(hash);
@@ -227,15 +230,16 @@ function getCache(ctx, hash) {
             ctx.log.info(`Cache lookup did not return data`);
             return null;
         }
-        if (data.cacheKey !== cacheKey) {
-            ctx.log.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
+        const [foundCacheKey, artifactTag] = String(data.cacheKey).split('#');
+        if (foundCacheKey !== cacheKey) {
+            ctx.log.info(`Cache key mismatch: ${foundCacheKey} !== ${cacheKey}`);
             return null;
         }
         const resp = yield axios_1.default.get(data.archiveLocation, {
             responseType: 'stream'
         });
         const size = +(resp.headers['content-length'] || 0);
-        return [size, resp.data];
+        return [size, resp.data, artifactTag];
     });
 }
 run();
