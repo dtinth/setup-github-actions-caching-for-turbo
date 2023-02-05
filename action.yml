@@ -8,3 +8,8 @@ runs:
   using: 'node16'
   main: 'dist/index.js'
   post: 'post.js'
+inputs:
+  cache-prefix:
+    description: 'Prefix for the cache key'
+    required: false
+    default: turbogha_

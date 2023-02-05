@@ -20,7 +20,8 @@ import {z} from 'zod'
 const serverPort = 41230
 const serverLogFile = '/tmp/turbogha.log'
 const cacheVersion = 'turbogha_v2'
-const getCacheKey = (hash: string): string => `turbogha_${hash}`
+const cachePrefix = core.getInput('cache-prefix') || 'turbogha_'
+const getCacheKey = (hash: string): string => `${cachePrefix}${hash}`
 
 async function run(): Promise<void> {
   if (process.argv[2] === '--server') {
@@ -48,6 +49,8 @@ async function launchServer(): Promise<void> {
       stdio: ['ignore', out, err]
     })
     child.unref()
+    core.info(`Cache version: ${cacheVersion}`)
+    core.info(`Cache prefix: ${cachePrefix}`)
     core.info(`Launched child process: ${child.pid}`)
     core.info(`Server log file: ${serverLogFile}`)
 
