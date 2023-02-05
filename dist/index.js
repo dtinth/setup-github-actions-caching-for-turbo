@@ -56,7 +56,8 @@ const zod_1 = __nccwpck_require__(41460);
 const serverPort = 41230;
 const serverLogFile = '/tmp/turbogha.log';
 const cacheVersion = 'turbogha_v2';
-const getCacheKey = (hash) => `turbogha_${hash}`;
+const cachePrefix = core.getInput('cache-prefix') || 'turbogha_';
+const getCacheKey = (hash) => `${cachePrefix}${hash}`;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         if (process.argv[2] === '--server') {
@@ -80,6 +81,8 @@ function launchServer() {
                 stdio: ['ignore', out, err]
             });
             child.unref();
+            core.info(`Cache version: ${cacheVersion}`);
+            core.info(`Cache prefix: ${cachePrefix}`);
             core.info(`Launched child process: ${child.pid}`);
             core.info(`Server log file: ${serverLogFile}`);
             // Wait for the server to be up and running
