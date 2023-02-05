@@ -28,6 +28,7 @@ async function run(): Promise<void> {
   }
   if (process.argv[2] === '--self-test') {
     return saveCache(
+      {log: console},
       'self-test',
       4,
       Readable.from([Buffer.from('meow')], {objectMode: false})
@@ -96,6 +97,7 @@ async function server(): Promise<void> {
     const hash = (request.params as {hash: string}).hash
     core.info(`Received artifact for ${hash}`)
     await saveCache(
+      request,
       hash,
       +(request.headers['content-length'] || 0),
       request.raw
@@ -107,7 +109,7 @@ async function server(): Promise<void> {
   fastify.get('/v8/artifacts/:hash', async (request, reply) => {
     const hash = (request.params as {hash: string}).hash
     core.info(`Requested artifact for ${hash}`)
-    const result = await getCache(hash)
+    const result = await getCache(request, hash)
     if (result === null) {
       reply.code(404)
       return {ok: false}
@@ -142,13 +144,22 @@ function getCacheClient(): AxiosInstance {
   })
 }
 
+interface RequestContext {
+  log: {
+    info: (message: string) => void
+  }
+}
+
 async function saveCache(
+  ctx: RequestContext,
   hash: string,
   size: number,
   stream: Readable
 ): Promise<void> {
   if (!env.valid) {
-    core.info(`Using filesystem cache because cache API env vars are not set`)
+    ctx.log.info(
+      `Using filesystem cache because cache API env vars are not set`
+    )
     await pipeline(stream, createWriteStream(`/tmp/${hash}.tg.bin`))
     return
   }
@@ -165,7 +176,7 @@ async function saveCache(
       `Unable to reserve cache (received: ${JSON.stringify(data)})`
     )
   }
-  core.info(`Reserved cache ${id}`)
+  ctx.log.info(`Reserved cache ${id}`)
   await client
     .patch(`/caches/${id}`, stream, {
       headers: {
@@ -178,10 +189,11 @@ async function saveCache(
   await client
     .post(`/caches/${id}`, {size})
     .catch(handleAxiosError('Unable to commit cache'))
-  core.info(`Saved cache ${id} for ${hash} (${size} bytes)`)
+  ctx.log.info(`Saved cache ${id} for ${hash} (${size} bytes)`)
 }
 
 async function getCache(
+  ctx: RequestContext,
   hash: string
 ): Promise<[number | undefined, Readable] | null> {
   if (!env.valid) {
@@ -201,13 +213,13 @@ async function getCache(
       validateStatus: s => s < 500
     })
     .catch(handleAxiosError('Unable to query cache'))
-  core.info(`Cache lookup for ${cacheKey}: ${status}`)
+  ctx.log.info(`Cache lookup for ${cacheKey}: ${status}`)
   if (!data) {
-    core.info(`Cache lookup did not return data`)
+    ctx.log.info(`Cache lookup did not return data`)
     return null
   }
   if (data.cacheKey !== cacheKey) {
-    core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
+    ctx.log.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`)
     return null
   }
   const resp = await axios.get(data.archiveLocation, {
@@ -224,11 +236,11 @@ function handleAxiosError(message: string): (err: any) => never {
   return err => {
     if (err.response) {
       const data = JSON.stringify(err.response.data)
-      core.info(
+      core.debug(
         `Response status ${err.response.status}: ${err.response.statusText}`
       )
-      core.info(`Response headers: ${JSON.stringify(err.response.headers)}`)
-      core.info(`Response data: ${data}`)
+      core.debug(`Response headers: ${JSON.stringify(err.response.headers)}`)
+      core.debug(`Response data: ${data}`)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       throw new Error(`${message}: ${err.message}`, {cause: err})

@@ -63,7 +63,7 @@ function run() {
             return server();
         }
         if (process.argv[2] === '--self-test') {
-            return saveCache('self-test', 4, stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
+            return saveCache({ log: console }, 'self-test', 4, stream_1.Readable.from([Buffer.from('meow')], { objectMode: false }));
         }
         return launchServer();
     });
@@ -122,14 +122,14 @@ function server() {
         fastify.put('/v8/artifacts/:hash', (request) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
             core.info(`Received artifact for ${hash}`);
-            yield saveCache(hash, +(request.headers['content-length'] || 0), request.raw);
+            yield saveCache(request, hash, +(request.headers['content-length'] || 0), request.raw);
             return { ok: true };
         }));
         // Download cache
         fastify.get('/v8/artifacts/:hash', (request, reply) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
             core.info(`Requested artifact for ${hash}`);
-            const result = yield getCache(hash);
+            const result = yield getCache(request, hash);
             if (result === null) {
                 reply.code(404);
                 return { ok: false };
@@ -159,10 +159,10 @@ function getCacheClient() {
         }
     });
 }
-function saveCache(hash, size, stream) {
+function saveCache(ctx, hash, size, stream) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!env.valid) {
-            core.info(`Using filesystem cache because cache API env vars are not set`);
+            ctx.log.info(`Using filesystem cache because cache API env vars are not set`);
             yield (0, promises_1.pipeline)(stream, (0, fs_1.createWriteStream)(`/tmp/${hash}.tg.bin`));
             return;
         }
@@ -177,7 +177,7 @@ function saveCache(hash, size, stream) {
         if (!id) {
             throw new Error(`Unable to reserve cache (received: ${JSON.stringify(data)})`);
         }
-        core.info(`Reserved cache ${id}`);
+        ctx.log.info(`Reserved cache ${id}`);
         yield client
             .patch(`/caches/${id}`, stream, {
             headers: {
@@ -190,10 +190,10 @@ function saveCache(hash, size, stream) {
         yield client
             .post(`/caches/${id}`, { size })
             .catch(handleAxiosError('Unable to commit cache'));
-        core.info(`Saved cache ${id} for ${hash} (${size} bytes)`);
+        ctx.log.info(`Saved cache ${id} for ${hash} (${size} bytes)`);
     });
 }
-function getCache(hash) {
+function getCache(ctx, hash) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!env.valid) {
             const path = `/tmp/${hash}.tg.bin`;
@@ -213,13 +213,13 @@ function getCache(hash) {
             validateStatus: s => s < 500
         })
             .catch(handleAxiosError('Unable to query cache'));
-        core.info(`Cache lookup for ${cacheKey}: ${status} ${JSON.stringify(data)}`);
+        ctx.log.info(`Cache lookup for ${cacheKey}: ${status}`);
         if (!data) {
-            core.info(`Cache lookup did not return data`);
+            ctx.log.info(`Cache lookup did not return data`);
             return null;
         }
         if (data.cacheKey !== cacheKey) {
-            core.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
+            ctx.log.info(`Cache key mismatch: ${data.cacheKey} !== ${cacheKey}`);
             return null;
         }
         const resp = yield axios_1.default.get(data.archiveLocation, {
@@ -235,9 +235,9 @@ function handleAxiosError(message) {
     return err => {
         if (err.response) {
             const data = JSON.stringify(err.response.data);
-            core.info(`Response status ${err.response.status}: ${err.response.statusText}`);
-            core.info(`Response headers: ${JSON.stringify(err.response.headers)}`);
-            core.info(`Response data: ${data}`);
+            core.debug(`Response status ${err.response.status}: ${err.response.statusText}`);
+            core.debug(`Response headers: ${JSON.stringify(err.response.headers)}`);
+            core.debug(`Response data: ${data}`);
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             throw new Error(`${message}: ${err.message}`, { cause: err });
