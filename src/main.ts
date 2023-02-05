@@ -101,7 +101,7 @@ async function server(): Promise<void> {
   // Upload cache
   fastify.put('/v8/artifacts/:hash', async request => {
     const hash = (request.params as {hash: string}).hash
-    core.info(`Received artifact for ${hash}`)
+    request.log.info(`Received artifact for ${hash}`)
     await saveCache(
       request,
       hash,
@@ -114,7 +114,7 @@ async function server(): Promise<void> {
   // Download cache
   fastify.get('/v8/artifacts/:hash', async (request, reply) => {
     const hash = (request.params as {hash: string}).hash
-    core.info(`Requested artifact for ${hash}`)
+    request.log.info(`Requested artifact for ${hash}`)
     const result = await getCache(request, hash)
     if (result === null) {
       reply.code(404)

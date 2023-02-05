@@ -127,14 +127,14 @@ function server() {
         // Upload cache
         fastify.put('/v8/artifacts/:hash', (request) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
-            core.info(`Received artifact for ${hash}`);
+            request.log.info(`Received artifact for ${hash}`);
             yield saveCache(request, hash, +(request.headers['content-length'] || 0), request.raw);
             return { ok: true };
         }));
         // Download cache
         fastify.get('/v8/artifacts/:hash', (request, reply) => __awaiter(this, void 0, void 0, function* () {
             const hash = request.params.hash;
-            core.info(`Requested artifact for ${hash}`);
+            request.log.info(`Requested artifact for ${hash}`);
             const result = yield getCache(request, hash);
             if (result === null) {
                 reply.code(404);
