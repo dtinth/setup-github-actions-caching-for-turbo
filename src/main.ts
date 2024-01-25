@@ -1,19 +1,19 @@
 /* eslint-disable github/no-then */
 import * as core from '@actions/core'
 import Fastify from 'fastify'
-import {spawn} from 'child_process'
+import {spawn} from 'node:child_process'
 import {
   createReadStream,
   createWriteStream,
   existsSync,
   openSync,
   statSync
-} from 'fs'
+} from 'node:fs'
 import waitOn from 'wait-on'
 import axios from 'axios'
 import type {AxiosInstance} from 'axios'
-import {pipeline} from 'stream/promises'
-import {Readable} from 'stream'
+import {pipeline} from 'node:stream/promises'
+import {Readable} from 'node:stream'
 import {Env} from 'lazy-strict-env'
 import {z} from 'zod'
 
