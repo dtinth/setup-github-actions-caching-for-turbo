@@ -4,6 +4,7 @@
   "private": true,
   "description": "TypeScript template action",
   "main": "lib/main.js",
+  "packageManager": "pnpm@8.14.3",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write '**/*.ts'",
