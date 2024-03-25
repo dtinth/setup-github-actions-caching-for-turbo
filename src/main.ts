@@ -179,16 +179,34 @@ async function saveCache(
     return
   }
   const client = getCacheClient()
-  const {data} = await client
+  const existingCacheResponse = await client
     .post(`/caches`, {
       key: getCacheKey(hash) + (tag ? `#${tag}` : ''),
       version: cacheVersion
     })
-    .catch(handleAxiosError('Unable to reserve cache'))
-  const id = data.cacheId
+    .then(response => ({success: true as const, data: response.data}))
+    .catch(error => {
+      if (error.response && error.response.status === 409) {
+        ctx.log.info(
+          `Cache key is already being written to, skipping cache write.`
+        )
+        return {success: false as const} // Early return to skip writing to cache
+      }
+
+      return handleAxiosError('Unable to reserve cache')(error)
+    })
+
+  // Silently exit when we have not been able to receive a cache-hit
+  if (existingCacheResponse.success === false) {
+    return
+  }
+
+  const id = existingCacheResponse.data.cacheId
   if (!id) {
     throw new Error(
-      `Unable to reserve cache (received: ${JSON.stringify(data)})`
+      `Unable to reserve cache (received: ${JSON.stringify(
+        existingCacheResponse.data
+      )})`
     )
   }
   ctx.log.info(`Reserved cache ${id}`)
