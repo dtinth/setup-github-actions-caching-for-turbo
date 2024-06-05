@@ -34,6 +34,8 @@ Configuration is optional. Here are the available options and their default valu
         with:
           # Set the prefix for the cache keys.
           cache-prefix: turbogha_
+          # Set the host that the server will listen on. Use 0.0.0.0 when accessing from inside a Docker container. 
+          host: localhost
 ```
 
 ## Disclaimer
