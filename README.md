@@ -1,3 +1,10 @@
+> [!WARNING]
+> This action is not currently actively maintained, and there have been [changes to the underlying API that makes this action no longer work](https://github.com/dtinth/setup-github-actions-caching-for-turbo/issues/26#issuecomment-2166446362). ***Users are recommended to use [rharkor/caching-for-turbo](https://github.com/marketplace/actions/caching-for-turborepo) instead.*** It is a drop-in replacement, so existing users can migrate easily.
+
+---
+
+_Original README file contents below:_
+
 <p align="center">
   <img src="https://user-images.githubusercontent.com/193136/216785245-f79f6b05-eb58-491b-812e-a6e20df2a47f.png" alt="turbogha, Turborepo Remote Caching Server API implementation for GitHub Actions">
 </p>
