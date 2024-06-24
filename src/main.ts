@@ -22,6 +22,7 @@ const serverLogFile = '/tmp/turbogha.log'
 const cacheVersion = 'turbogha_v2'
 const cachePrefix = core.getInput('cache-prefix') || 'turbogha_'
 const getCacheKey = (hash: string): string => `${cachePrefix}${hash}`
+const serverHost = core.getInput('host') || 'localhost'
 
 async function run(): Promise<void> {
   if (process.argv[2] === '--server') {
@@ -135,7 +136,7 @@ async function server(): Promise<void> {
     }
     return reply.send(stream)
   })
-  await fastify.listen({port: serverPort})
+  await fastify.listen({host: serverHost, port: serverPort})
 }
 
 const env = Env(

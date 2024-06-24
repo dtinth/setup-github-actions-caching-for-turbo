@@ -13,3 +13,7 @@ inputs:
     description: 'Prefix for the cache key'
     required: false
     default: turbogha_
+  host:
+    description: 'Server listen host'
+    required: false
+    default: localhost
