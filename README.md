@@ -1,5 +1,8 @@
+> [!NOTE]
+> **Users are recommended to use [rharkor/caching-for-turbo](https://github.com/marketplace/actions/caching-for-turborepo) instead.** It is a drop-in replacement, so existing users can migrate easily.
+
 > [!WARNING]
-> This action is not currently actively maintained, and there have been [changes to the underlying API that makes this action no longer work](https://github.com/dtinth/setup-github-actions-caching-for-turbo/issues/26#issuecomment-2166446362). ***Users are recommended to use [rharkor/caching-for-turbo](https://github.com/marketplace/actions/caching-for-turborepo) instead.*** It is a drop-in replacement, so existing users can migrate easily.
+> This action is no longer actively maintained, and there have been [breaking changes to the underlying API](https://github.com/dtinth/setup-github-actions-caching-for-turbo/issues/26#issuecomment-2166446362) that makes this action no longer work.
 
 ---
 
